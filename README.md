@@ -1,4 +1,4 @@
-GameOfLife
+Game Of Life
 ==========
 
 Commands:
