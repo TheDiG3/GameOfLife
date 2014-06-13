@@ -82,7 +82,7 @@ public class GameSimulator
     /**
      * <summary> Returns the bidimensional array containing the states of the cells. </summary>
      */
-    public CELL_STATE[,] getCellGridState()
+    public CELL_STATE[ , ] getCellGridState()
     {
         return cell_grid_;
     }
@@ -90,7 +90,7 @@ public class GameSimulator
     /**
      * <summary> Sets the bidimensional array containing the states of the cells. </summary>
      */
-    public void setCellGridState(CELL_STATE[,] _cell_grid)
+    public void setCellGridState( CELL_STATE[ , ] _cell_grid )
     {
         this.cell_grid_ = _cell_grid;
     }
@@ -98,6 +98,12 @@ public class GameSimulator
     #endregion
 
     #region Private Methods
+
+    /** <summary> Mod function (not remainder) </summary> */
+    private int modFunction( int _a , int _b )
+    {
+        return _a - ( _b * Mathf.FloorToInt( (float) _a / (float) _b ) );
+    }
 
     /**
      * <summary> Gets the total count of how many alive cells surround the cell situated in the specified row and column of the grid. </summary>
@@ -109,6 +115,82 @@ public class GameSimulator
     {
         byte local_neighbors_count = 0;
 
+        int temp_check_row;
+        int temp_check_column;
+
+        // Top-Left
+        temp_check_row = modFunction( _cell_row - 1 , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column - 1 , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Top-Center
+        temp_check_row = modFunction( _cell_row - 1 , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Top-Right
+        temp_check_row = modFunction( _cell_row - 1 , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column + 1 , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Left
+        temp_check_row = modFunction( _cell_row , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column - 1 , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Right
+        temp_check_row = modFunction( _cell_row , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column + 1 , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Bottom-Left
+        temp_check_row = modFunction( _cell_row + 1 , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column - 1 , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Bottom
+        temp_check_row = modFunction( _cell_row + 1 , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        // Bottom-Right
+        temp_check_row = modFunction( _cell_row + 1 , cell_grid_.GetLength( 0 ) );
+        temp_check_column = modFunction( _cell_column + 1 , cell_grid_.GetLength( 1 ) );
+
+        if ( this.cell_grid_[ temp_check_row , temp_check_column ] == CELL_STATE.ALIVE )
+        {
+            ++local_neighbors_count;
+        }
+
+        /* OLD CODE - NO WRAP AROUND
         // Top-Left
         if ( ( _cell_row != 0 ) && ( _cell_column != 0 ) )
         {
@@ -174,7 +256,7 @@ public class GameSimulator
                 ++local_neighbors_count;
             }
         }
-
+        */
         return local_neighbors_count;
 
     }
