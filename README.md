@@ -45,7 +45,9 @@ Recommendations
 
 While it's not recommended to set the grid size any **higher than 50x50** for performance reasons (the game might lock up at 100x100 or more) the bigger the grid the most interesting the simulation will be.
 
-
+Web Player Link
+---
+https://dl.dropboxusercontent.com/u/14583828/Game%20Of%20Life/Web%20Player/Web%20Player.html
 
 
 
