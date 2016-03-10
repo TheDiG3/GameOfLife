@@ -52,10 +52,10 @@ Recommendations
 While it's not recommended to set the grid size any **higher than 200x200** for performance reasons (the game might lock up at 500x500 or more) the bigger the grid the most interesting the simulation will be.
 
 Web Player Link 
-**NOTE: Only works on Firefox/Internet Explorer and multithreading might break if future Unity APIs are changed. I suggest downloading a build!**
 ---
 http://thedig3.github.io/GameOfLife/
 
+**NOTE: Only works on Firefox/Internet Explorer and multithreading might break if future Unity APIs are changed. I suggest downloading a build!**
 
 
 
