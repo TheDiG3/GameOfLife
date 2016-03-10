@@ -26,19 +26,22 @@ public class GameManager : MonoBehaviour
     private GameSimulator game_simulator_ = null;
 
     /** <summary> The grid containing the data about all the cells. </summary> */
-    private GameSimulator.CELL_STATE[ , ] game_grid_;
+    private GameSimulator.ECellState[, ] game_grid_;
 
     /** <summary> The grid containing all the references to the game objects. </summary> */
-    private GameObject[ , ] game_objects_grid_;
+    private GameObject[, ] game_objects_grid_;
 
     /** <summary> The settings window rect reference. </summary> */
-    private Rect settings_window_ = new Rect( 0 , 0 , 150 , 225 );
+    private Rect settings_window_ = new Rect( 0 , 0 , 230 , 300 );
 
     private bool b_is_simulation_running_ = false;
     private bool b_is_window_settings_enabled_ = true;
+    private bool b_use_multithreading_ = false;
 
     /** <summary> Counts the time since the last GameSimulator.simulate was called. </summary> */
     private float time_elapsed_since_last_simulation_ = 0;
+
+    private float last_simulation_duration_;
 
     #endregion
 
@@ -50,17 +53,16 @@ public class GameManager : MonoBehaviour
      * <param name="_cell_column"> The column index of the cell to change. </param>
      * <param name="_new_cell_state"> The new state of the cell. </param>
      */
-    public void changeCellState( int _cell_row , int _cell_column , GameSimulator.CELL_STATE _new_cell_state )
+    public void changeCellState( int _cell_row , int _cell_column , GameSimulator.ECellState _new_cell_state )
     {
         game_grid_[ _cell_row , _cell_column ] = _new_cell_state;
-        if ( _new_cell_state == GameSimulator.CELL_STATE.ALIVE )
+        if ( _new_cell_state == GameSimulator.ECellState.ALIVE )
         {
-            game_objects_grid_[ _cell_row , _cell_column ].renderer.material = alive_cell_material_;
-
+            game_objects_grid_[ _cell_row , _cell_column ].GetComponent<Renderer>().material = alive_cell_material_;
         }
         else
         {
-            game_objects_grid_[ _cell_row , _cell_column ].renderer.material = dead_cell_material_;
+            game_objects_grid_[ _cell_row , _cell_column ].GetComponent<Renderer>().material = dead_cell_material_;
         }
 
         // If the grid was rebuilt then the game simulator will be set back to null since no simulation is running.
@@ -95,27 +97,36 @@ public class GameManager : MonoBehaviour
         // Accelerates the simulation
         if ( Input.GetKey( KeyCode.E ) )
         {
-            if ( simulation_time_ >= 0.1 )
+            if ( simulation_time_ > 0.001F )
             {
-                simulation_time_ -= 0.1F;
+                simulation_time_ /= 1.2F;
             }
         }
         // Slows the simulation
         else if ( Input.GetKey( KeyCode.Q ) )
         {
-            simulation_time_ += 0.1F;
+            if ( simulation_time_ < 100F )
+            {
+                simulation_time_ *= 1.2F;
+            }
         }
 
         // If enough time has passed we need to run another simulation. I also need to make sure that the simulation is running.
         if ( b_is_simulation_running_ && ( time_elapsed_since_last_simulation_ >= simulation_time_ ) )
         {
-            game_simulator_.simulate();
-            game_grid_ = game_simulator_.getCellGridState();
+            GameSimulator.SimulationStep temp_simulation_step = game_simulator_.Simulate();
+
+            // Under multithreading environment the simulation queue might be empty if the render thread is faster than the simulating thread
+            if ( temp_simulation_step != null )
+            {
+                game_grid_ = temp_simulation_step.cell_grid;
+                last_simulation_duration_ = temp_simulation_step.time_to_simulate;
+            }
+
             updateGridGraphics();
 
             time_elapsed_since_last_simulation_ = 0;
         }
-
     }
 
     // Code for the user interface.
@@ -126,7 +137,6 @@ public class GameManager : MonoBehaviour
             settings_window_ = GUI.Window( 0 , settings_window_ , settingsWindow , "Settings" );
         }
     }
-
 
     /**
      * <summary> Builds the grid based on the rows and columns specified inside the class. </summary>
@@ -146,18 +156,10 @@ public class GameManager : MonoBehaviour
                 Destroy( temp_previous_cell );
             }
         }
-        /* OLD CODE -- UNOPTIMIZED
-        
-        // I need to destroy the previous cells (they are tagged as "Cell") to avoid conflicts with the new ones.
-        GameObject[] temp_previous_cells = GameObject.FindGameObjectsWithTag( "Cell" );
-        foreach ( GameObject temp_previous_cell in temp_previous_cells )
-        {
-            Destroy( temp_previous_cell );
-        }*/
 
         // Creates a new empty grid.
-        game_grid_ = new GameSimulator.CELL_STATE[ local_grid_rows , local_grid_columns ];
-        game_objects_grid_ = new GameObject[ local_grid_rows , local_grid_columns ];
+        game_grid_ = new GameSimulator.ECellState[ local_grid_rows, local_grid_columns ];
+        game_objects_grid_ = new GameObject[ local_grid_rows, local_grid_columns ];
 
         // Temporary game object used to store the reference for the newly created cell so that I can parent it in the scene hierarchy.
         GameObject temp_cell_reference;
@@ -175,8 +177,8 @@ public class GameManager : MonoBehaviour
                 CellProperties temp_cell_properties = temp_cell_reference.GetComponent<CellProperties>();
                 temp_cell_properties.cell_column_ = cycle_column_index;
                 temp_cell_properties.cell_row_ = cycle_row_index;
-                temp_cell_properties.cell_state_ = GameSimulator.CELL_STATE.DEAD;
-                game_grid_[ cycle_row_index , cycle_column_index ] = GameSimulator.CELL_STATE.DEAD;
+                temp_cell_properties.cell_state_ = GameSimulator.ECellState.DEAD;
+                game_grid_[ cycle_row_index , cycle_column_index ] = GameSimulator.ECellState.DEAD;
                 game_objects_grid_[ cycle_row_index , cycle_column_index ] = temp_cell_reference;
             }
         }
@@ -192,13 +194,13 @@ public class GameManager : MonoBehaviour
         {
             for ( int cycle_column_index = 0 ; cycle_column_index < game_grid_.GetLength( 1 ) ; cycle_column_index++ )
             {
-                if ( game_grid_[ cycle_row_index , cycle_column_index ] == GameSimulator.CELL_STATE.ALIVE )
+                if ( game_grid_[ cycle_row_index , cycle_column_index ] == GameSimulator.ECellState.ALIVE )
                 {
-                    game_objects_grid_[ cycle_row_index , cycle_column_index ].renderer.material = alive_cell_material_;
+                    game_objects_grid_[ cycle_row_index , cycle_column_index ].GetComponent<Renderer>().material = alive_cell_material_;
                 }
                 else
                 {
-                    game_objects_grid_[ cycle_row_index , cycle_column_index ].renderer.material = dead_cell_material_;
+                    game_objects_grid_[ cycle_row_index , cycle_column_index ].GetComponent<Renderer>().material = dead_cell_material_;
                 }
 
                 game_objects_grid_[ cycle_row_index , cycle_column_index ].GetComponent<CellProperties>().cell_state_ = game_grid_[ cycle_row_index , cycle_column_index ];
@@ -207,7 +209,7 @@ public class GameManager : MonoBehaviour
     }
 
     /**
-     * Responsible of drawing the settings window.
+     * Responsible for drawing the settings window.
      */
     private void settingsWindow( int _windowID )
     {
@@ -220,6 +222,12 @@ public class GameManager : MonoBehaviour
         if ( GUILayout.Button( "Rebuild" ) )
         {
             buildGrid();
+
+            if ( game_simulator_ != null )
+            {
+                game_simulator_.Dispose();
+            }
+
             // By setting the game simulator to null I can ensure that no simulation is running whenever the "Start" button is clicked afterwards.
             game_simulator_ = null;
 
@@ -234,7 +242,13 @@ public class GameManager : MonoBehaviour
             // If the game simulator is set to null it means that we need a new game simulator object to run the simulation since we've most likely rebuilt the grid.
             if ( game_simulator_ == null )
             {
-                game_simulator_ = new GameSimulator( game_grid_ );
+                game_simulator_ = new GameSimulator( game_grid_ , b_use_multithreading_ , true );
+            }
+            else
+            {
+                game_simulator_.IsSimulationRunning = true;
+                // I need to reset the threading environment since it might have changed if the user clicked on the "Step" button
+                game_simulator_.UseThreading = b_use_multithreading_;
             }
         }
 
@@ -242,24 +256,61 @@ public class GameManager : MonoBehaviour
         if ( GUILayout.Button( "Stop" ) )
         {
             b_is_simulation_running_ = false;
+            game_simulator_.IsSimulationRunning = false;
         }
 
         // Runs one step of the simulation
-        if ( GUILayout.Button( "Step" ) )
+        if ( GUILayout.Button( "Step (Disables Multithreading)" ) )
         {
-            // I can only run valid simulations. If no simulations are found I start a new one without starting the automated timer.
+            b_is_simulation_running_ = false;
+            b_use_multithreading_ = false;
+
+            // I can only run valid simulations. If no simulations are found I start a new one without multithreading and ticking.
             if ( game_simulator_ == null )
             {
-                game_simulator_ = new GameSimulator( game_grid_ );
+                game_simulator_ = new GameSimulator( game_grid_ , false , false );
+            }
+            else
+            {
+                game_simulator_.IsSimulationRunning = false;
+                game_simulator_.UseThreading = false;
             }
 
-            game_simulator_.simulate();
-            game_grid_ = game_simulator_.getCellGridState();
+            GameSimulator.SimulationStep temp_simulation_step = game_simulator_.Simulate();
+            game_grid_ = temp_simulation_step.cell_grid;
+            last_simulation_duration_ = temp_simulation_step.time_to_simulate;
+
             updateGridGraphics();
         }
+
+        if ( GUILayout.Toggle( b_use_multithreading_ , "Multithreading" ) != b_use_multithreading_ )
+        {
+            b_use_multithreading_ = !b_use_multithreading_;
+
+            // If we still have not created a simulation create a non ticking, single threaded one
+            // Threading environment will be set immediately after and ticking should only start with the appropriate button
+            if ( game_simulator_ == null )
+            {
+                game_simulator_ = new GameSimulator( game_grid_ , false , false );
+            }
+
+            game_simulator_.UseThreading = b_use_multithreading_;
+        }
+
+        GUILayout.Label( "Last simulation time: " + last_simulation_duration_ + "ms" );
 
         GUI.DragWindow();
     }
 
+    // We need to stop the thread we created
+    public void OnDestroy()
+    {
+        if ( game_simulator_ != null )
+        {
+            game_simulator_.Dispose();
+        }
+    }
+
     #endregion
+
 }
