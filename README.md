@@ -38,7 +38,7 @@ Simulation Wrapping
 ---
 
 The whole simulation is run for aestethic purposes inside the **Unity Game Engine**.
-More specifically, a **GameManager** object is created, which takes care of the **UI for the simulation settings**, the **speed of the simulation** and **start/stop** of it.
+More specifically, a **GameManager** object is created, which takes care of the **UI for the simulation settings**, the **speed of the simulation**, **switch to multithread (in REALTIME!)** and **start/stop** of it.
 
 It's up to the user to decide whether to let the simulation run on its own or **step by step**.
 
