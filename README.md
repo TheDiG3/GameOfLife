@@ -49,7 +49,7 @@ Visually the **GameManager** also updates the graphics of each cell just by **ch
 Recommendations
 ---
 
-While it's not recommended to set the grid size any **higher than 200x200** for performance reasons (the game might lock up at 500x500 or more) the bigger the grid the most interesting the simulation will be.
+While it's not recommended to set the grid size any **higher than 200x200** for performance reasons (the game might lock up at 500x500 or more) the bigger the grid the more interesting the simulation will be.
 
 Web Player Link 
 ---
